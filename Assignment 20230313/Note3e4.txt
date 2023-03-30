@@ -1,0 +1,42 @@
+	BISOGNA INGEGNERARSI PER SCRIVERE 11 BIT DAI PIÙ SIGNIFICATIVI AI MENO SIGNIFICATIVI.
+	
+	120 	= 00000078 = 000.0111.1000
+	35	= 00000023 = 000.0010.0011
+	-98 	= FFFFFF9E = 111.1001.1110
+
+	FILE DI OUTPUT: 
+	000.0111.1000 000.0010.0011 111.1001.1110
+
+	(Vogliamo usare il primo byte)
+
+		|
+		|
+		V
+
+	00001111.00000000.10001111.11001111.0
+		0F 	 00 		8F 	CF
+
+	120 = 00000078 =	000.0111.1000
+					 * (Bit a cui sono interessato)
+	
+	(VOGLIO IL 4° BIT) -> x >> 4 -> 000.0000.0111
+						& 000.0000.0001 (1) x & 1 ->
+								  
+	-> Così facendo siamo in grado di estrarre il bit a cui siamo interessati.
+
+	Così facendo riesco ad ottenere ogni bit ma come faccio a scriverli?
+
+	Supponiamo di avere questo buffer di roba a caso:
+	abcd.efgh 
+	Se volessi inserire 0:
+	
+	==> bcde.fgh0 faccio uno shift a sinistra e così facendo riesco ad ottenere con 0000
+	==> efgh.0000, inserisco 1111 ==> 0000.1111
+
+	Così ne faccio 8 poi i restanti 3 saranno 0.
+
+	uint8_t buf;
+	uint8_t bit; Può essere 0 o 1
+
+	buf = buf*2 + bit;
+	bug = (buf << 1) | bit;
