@@ -36,9 +36,9 @@ struct node {
 	}
 };
 
-int comp(node* a, node* b) { return a->prob_ < b->prob_; }
+int comp(node a, node b) { return a.prob_ < b.prob_; }
 
-node* gen_tree(vector<node*>& v) {
+node gen_tree(vector<node>& v) {
 	if (v.size() < 2)
 		//DA SISTEMARE
 		exit(3);
@@ -46,18 +46,21 @@ node* gen_tree(vector<node*>& v) {
 	cout << "START:" << endl << endl;
 	
 	for (auto& elem : v)
-		cout << elem->sim_ << " : " << elem->prob_ << endl;
+		cout << elem.sim_ << " : " << elem.prob_ << endl;
 
 	while (v.size() != 1) {	
 
 		// Create new node sum of two probabilities and linked with previous nodes
-		node tmp(v[0]->sim_, v[0]->prob_ + v[1]->prob_, v[0], v[1]);
+		node* v_0 = new node(v[0].sim_, v[0].prob_, v[0].left_e_, v[0].right_e_);
+		node* v_1 = new node(v[1].sim_, v[1].prob_, v[1].left_e_, v[1].right_e_);
+
+		node tmp(v_0->sim_, v_0->prob_ + v_1->prob_, v_0, v_1);
 		
 		// Remove used nodes
 		v.erase(v.begin(), v.begin() + 2);
 		
 		// Insert sum node
-		v.push_back(&tmp);
+		v.push_back(tmp);
 		
 		// Sort vector
 		sort(v.begin(), v.end(), comp);
@@ -66,7 +69,7 @@ node* gen_tree(vector<node*>& v) {
 
 
 		for(auto& elem: v)
-			cout << elem->sim_ << " : " << elem->prob_ << endl;
+			cout << elem.sim_ << " : " << elem.prob_ << endl;
 
 		cout << endl;
 	}
@@ -92,12 +95,12 @@ void print_tree(node* t) {
 
 }
 
-vector<node*> getnodes(map<char, float> m) {
-	vector<node*> v;
+vector<node> getnodes(map<char, float> m) {
+	vector<node> v;
 	
 	for (const auto& item : m) {
 		auto tmp = node(item.first, item.second);
-		v.push_back(&tmp);
+		v.push_back(tmp);
 	}
 	
 	sort(v.begin(), v.end(), comp);
@@ -150,15 +153,15 @@ void encode(const char* input_file, const char* output_file) {
 
 	map<char, float> m = frequencies(is, &freq);
 
-	vector<node*> v = getnodes(m);
+	vector<node> v = getnodes(m);
 
-	node* tree = gen_tree(v);
+	node tree = gen_tree(v);
 
 	os << "HUFFMAN1";
 
 	os << freq;
 	
-	print_tree(tree);
+	print_tree(&tree);
 
 }
 
