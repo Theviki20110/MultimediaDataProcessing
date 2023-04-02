@@ -7,10 +7,101 @@
 
 using namespace std;
 
+template<typename T>
+std::ostream& raw_write(std::ostream& os, const T& val, size_t size = sizeof(T)) {
+	return os.write(reinterpret_cast<const char*>(&val), size);
+}
+
+
+template<typename T>
+std::istream& raw_read(std::istream& is, T& val, size_t size = sizeof(T)) {
+	return is.read(reinterpret_cast<char*>(&val), size);
+}
+
+class bitwriter {
+	uint8_t buffer_;
+	int n_ = 0;
+	std::ostream& os_;
+
+	std::ostream& write_bit(uint32_t bit) {
+		buffer_ = (buffer_ << 1) | (bit & 1);
+		++n_;
+		if (n_ == 8) {
+			raw_write(os_, buffer_);
+			n_ = 0;
+		}
+		return os_;
+	}
+
+public:
+	bitwriter(std::ostream& os) : os_(os) {}
+
+	std::ostream& write(uint32_t u, uint8_t n) {
+		while (n --> 0) {
+			write_bit(u >> n);
+		}
+		
+		return os_;
+	}
+
+	std::ostream& operator()(uint32_t u, uint8_t n) {
+		return write(u, n);
+	}
+
+	std::ostream& flush(uint32_t bit = 0) {
+		while (n_ > 0) {
+			write_bit(bit);
+		}
+		return os_;
+	}
+
+	~bitwriter() {
+		flush();
+	}
+};
+
+class bitreader {
+	uint8_t buffer_;
+	uint8_t n_ = 0;
+	std::istream& is_;
+
+public:
+	bitreader(std::istream& is) : is_(is) {}
+
+	uint32_t read_bit() {
+		if (n_ == 0) {
+			raw_read(is_, buffer_);
+			n_ = 8;
+		}
+		--n_;
+		return (buffer_ >> n_) & 1;
+	}
+
+	uint32_t read(uint8_t n) {
+		uint32_t u = 0;
+		while (n-- > 0) {
+			u = (u << 1) | read_bit();
+		}
+		return u;
+	}
+
+	uint32_t operator()(uint8_t n) {
+		return read(n);
+	}
+
+	bool fail() const {
+		return is_.fail();
+	}
+
+	explicit operator bool() const {
+		return !fail();
+	}
+};
+
+
 struct node {
 	char sim_;
 	float prob_;
-	//bool direction;
 	node* left_e_; 
 	node* right_e_;
 
@@ -28,25 +119,24 @@ struct node {
 		right_e_ = NULL;
 	}
 
-	bool ifleaf() {
+	bool isleaf() {
 		if ((left_e_ == NULL) || (right_e_ == NULL))
-			return false;
+			return true;
 
-		return true;
+		return false;
 	}
 };
 
 int comp(node a, node b) { return a.prob_ < b.prob_; }
 
-node gen_tree(vector<node>& v) {
+node* gen_tree(vector<node>& v) {
 	if (v.size() < 2)
 		//DA SISTEMARE
-		exit(3);
+		exit(4);
 
-	cout << "START:" << endl << endl;
-	
-	for (auto& elem : v)
-		cout << elem.sim_ << " : " << elem.prob_ << endl;
+	//cout << "START:" << endl << endl;
+	/*for (auto& elem : v)
+		cout << elem.sim_ << " : " << elem.prob_ << endl;*/
 
 	while (v.size() != 1) {	
 
@@ -65,34 +155,77 @@ node gen_tree(vector<node>& v) {
 		// Sort vector
 		sort(v.begin(), v.end(), comp);
 
-		cout << endl;
 
-
-		for(auto& elem: v)
-			cout << elem.sim_ << " : " << elem.prob_ << endl;
-
-		cout << endl;
+		//cout << endl;
+		/*for (auto& elem : v)
+			cout << elem.sim_ << " : " << elem.prob_ << endl;*/
+		//cout << endl;
 	}
 
-	cout << "END" << endl;
+	/*cout << "END" << endl << endl;*/
 
-	return v[0];
+	node* root = new node(v[0].sim_, v[0].prob_, v[0].left_e_, v[0].right_e_);
+	
+	return root;
 }
 
+void print_encode(node* t, ofstream& os, string encoding, bitwriter bw) {
 
-void print_tree(node* t) {
+	if (t->isleaf()) {
+		cout << encoding << " " << t->sim_ << endl;
+		
+		uint8_t len = encoding.length();
+		
+		// bit write
 
-	if ((t->left_e_ == NULL) || (t->right_e_ == NULL)) {
-		cout << "LEAF: " << t->prob_ << endl;
+		bw.write(t->sim_, 8);
+		
+		bw.write(len, 5);
+
+
+		for (size_t i = 0; i < len; i++) {
+			bw.write(encoding.data()[i], 1);
+		}
+		
 		return;
 	}
 
 	cout << "NODE: " << t->prob_ << endl;
 
-	print_tree(t->left_e_);
-	
-	print_tree(t->right_e_);
+	print_encode(t->left_e_, os, encoding.append("0"), bw);
+	encoding.pop_back();
 
+	print_encode(t->right_e_, os, encoding.append("1"), bw);
+}
+
+void printBT(const std::string& prefix, const node* node, bool isLeft)
+{
+	if (node != nullptr)
+	{
+		std::cout << prefix;
+
+		std::cout << (isLeft ? "|--" : "L--");
+
+		// print the value of the node
+		std::cout << node->prob_ << std::endl;
+
+		// enter the next tree level - left and right branch
+		if (node->left_e_ != nullptr) {
+			printBT(prefix + (isLeft ? "|   " : "    "), node->left_e_, true);
+		}
+
+		if (node->right_e_ != nullptr) {
+			printBT(prefix + (isLeft ? "|   " : "    "), node->right_e_, false);
+		}
+	}
+	else {
+		return;
+	}
+}
+
+void printBT(const node* node)
+{
+	printBT("", node, false);
 }
 
 vector<node> getnodes(map<char, float> m) {
@@ -139,30 +272,32 @@ map<char, float> frequencies(ifstream& is, uint8_t* sum) {
 }
 
 void encode(const char* input_file, const char* output_file) {
+	
 	ifstream is (input_file, ios::binary);
-	
-	if (is.fail())
-		exit(3);
-	
 	ofstream os(output_file, ios::binary);
 
-	if (os.fail())
-		exit(4);
+	if ((os.fail()) || (is.fail()))
+		exit(3);
+
+	os << "HUFFMAN1";
 
 	uint8_t freq;
 
 	map<char, float> m = frequencies(is, &freq);
 
+	bitwriter bw(os);
+
+	bw.write(m.size(), 8);
+
 	vector<node> v = getnodes(m);
 
-	node tree = gen_tree(v);
-
-	os << "HUFFMAN1";
-
-	os << freq;
+	node* tree = gen_tree(v);
 	
-	print_tree(&tree);
+	print_encode(tree, os, string(""), bw);
 
+	bw.write(freq, 32);
+	
+	//printBT(tree);
 }
 
 void decode(const char* input_file, const char* output_file) {
