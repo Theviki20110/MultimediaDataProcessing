@@ -12,7 +12,6 @@ std::ostream& raw_write(std::ostream& os, const T& val, size_t size = sizeof(T))
 	return os.write(reinterpret_cast<const char*>(&val), size);
 }
 
-
 template<typename T>
 std::istream& raw_read(std::istream& is, T& val, size_t size = sizeof(T)) {
 	return is.read(reinterpret_cast<char*>(&val), size);
@@ -27,7 +26,7 @@ class bitwriter {
 		buffer_ = (buffer_ << 1) | (bit & 1);
 		++n_;
 		if (n_ == 8) {
-			raw_write(os_, buffer_);
+		raw_write(os_, buffer_);
 			n_ = 0;
 		}
 		return os_;
@@ -37,8 +36,8 @@ public:
 	bitwriter(std::ostream& os) : os_(os) {}
 
 	std::ostream& write(uint32_t u, uint8_t n) {
-		while (n --> 0) {
-			write_bit(u >> n);
+		for (int i = n - 1; i >= 0; --i) {
+			write_bit(u >> i);
 		}
 		
 		return os_;
@@ -97,7 +96,6 @@ public:
 		return !fail();
 	}
 };
-
 
 struct node {
 	char sim_;
@@ -169,33 +167,22 @@ node* gen_tree(vector<node>& v) {
 	return root;
 }
 
-void print_encode(node* t, ofstream& os, string encoding, bitwriter bw) {
+void print_encode(node* t, string encoding, bitwriter bw, map<char, string> &codes) {
 
 	if (t->isleaf()) {
 		cout << encoding << " " << t->sim_ << endl;
-		
-		uint8_t len = encoding.length();
-		
-		// bit write
+				
+		codes[t->sim_] = encoding;
 
-		bw.write(t->sim_, 8);
-		
-		bw.write(len, 5);
-
-
-		for (size_t i = 0; i < len; i++) {
-			bw.write(encoding.data()[i], 1);
-		}
-		
 		return;
 	}
 
 	cout << "NODE: " << t->prob_ << endl;
 
-	print_encode(t->left_e_, os, encoding.append("0"), bw);
+	print_encode(t->left_e_, encoding.append("0"), bw, codes);
 	encoding.pop_back();
 
-	print_encode(t->right_e_, os, encoding.append("1"), bw);
+	print_encode(t->right_e_, encoding.append("1"), bw, codes);
 }
 
 void printBT(const std::string& prefix, const node* node, bool isLeft)
@@ -273,7 +260,7 @@ map<char, float> frequencies(ifstream& is, uint8_t* sum) {
 
 void encode(const char* input_file, const char* output_file) {
 	
-	ifstream is (input_file, ios::binary);
+	ifstream is(input_file, ios::binary);
 	ofstream os(output_file, ios::binary);
 
 	if ((os.fail()) || (is.fail()))
@@ -284,7 +271,7 @@ void encode(const char* input_file, const char* output_file) {
 	uint8_t freq;
 
 	map<char, float> m = frequencies(is, &freq);
-
+	
 	bitwriter bw(os);
 
 	bw.write(m.size(), 8);
@@ -292,27 +279,48 @@ void encode(const char* input_file, const char* output_file) {
 	vector<node> v = getnodes(m);
 
 	node* tree = gen_tree(v);
-	
-	print_encode(tree, os, string(""), bw);
+
+	map<char, string> codes;
+	print_encode(tree, string(""), bw, codes);
+
+	for (const auto& elem : codes) {
+		uint32_t len = elem.second.length();
+
+		bw.write(elem.first, 8);
+
+		bw.write(len, 5);
+
+		for (size_t i = 0; i < len; i++)
+			bw.write(elem.second[i], 1);
+	}
 
 	bw.write(freq, 32);
-	
+
+	is.clear();
+	is.seekg(0);
+
+	char sim;
+
+	while (is >> sim) {
+		string elem(codes[sim]);
+		for (size_t i = 0; i < elem.length(); i++)
+			bw.write(elem[i], 1);
+	}
+
 	//printBT(tree);
 }
 
 void decode(const char* input_file, const char* output_file) {
+	
 	ifstream is(input_file, ios::binary);
-
-	if (is.fail())
-		exit(3);
-
 	ofstream os(output_file);
 
-	if (os.fail())
-		exit(4);
+	if ((is.fail()) || (os.fail()))
+		exit(3);
+	
+	bitreader br(is);
 
 }
-
 
 
 int main(int args, char** argv) {
