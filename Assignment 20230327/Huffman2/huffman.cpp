@@ -259,6 +259,16 @@ map<char, float> frequencies(ifstream& is, uint8_t* sum) {
 	return out;
 }
 
+bool search(uint32_t len, unordered_map<char, uint32_t> codes, char* sim) {
+	for (const auto& elem : codes) {
+		if (elem.second == len) {
+			*sim = elem.first;
+			return true;
+		}
+	}
+	return false;
+}
+
 void encode(const char* input_file, const char* output_file) {
 
 	ifstream is(input_file, ios::binary);
@@ -335,17 +345,17 @@ void decode(const char* input_file, const char* output_file) {
 	cout << "TableEntries: " << table_entries << endl << endl;
 
 	/* Read HuffmanTable */
-	vector<string> codes;
+	unordered_map<char, uint32_t> codes;
 	for (size_t i = 0; i < table_entries; i++) {
 
 		char c = br.read(8);
-		uint8_t len = br.read(5);
+		uint32_t len = br.read(5);
 		
-		codes.push_back("Ciao");
+		codes[c] = len;
 	}
 
 	for (const auto& elem : codes)
-		cout << elem  << endl;
+		cout << elem.first << " " << elem.second << endl;
 
 	cout << endl;
 
@@ -355,9 +365,18 @@ void decode(const char* input_file, const char* output_file) {
 
 	/* Decode */
 	string code;
+	uint32_t len = 0;
+	char elem;
 	for (uint32_t i = 0; i < num_symbols;) {
-		
+		len++;
+		code.push_back(br.read(1) + '0');
 
+		/*Trovo il codice*/
+		if (search(len, codes, &elem)) {
+			os << elem;
+			len = 0;
+			i++;
+		}
 	}
 }
 
