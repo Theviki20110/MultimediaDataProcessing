@@ -331,7 +331,7 @@ void decode(const char* input_file, const char* output_file) {
 	cout << "TableEntries: " << table_entries << endl << endl;
 
 	/* Read HuffmanTable */
-	map<char, string> codes;
+	map<string, char> codes;
 	for (size_t i = 0; i < table_entries; i++) {
 		
 		char c = br.read(8);
@@ -343,7 +343,7 @@ void decode(const char* input_file, const char* output_file) {
 		for (size_t j = 0; j < len; j++)
 			code.push_back(br.read(1) + '0');
 
-		codes[c] = code;
+		codes[code] = c;
 	}
 
 	for (const auto& elem : codes)
@@ -356,7 +356,15 @@ void decode(const char* input_file, const char* output_file) {
 	cout << "NumSymbols: " << num_symbols << endl;
 	
 	/* Decode */
-	for (uint32_t i = 0; i < num_symbols; i++) {
+	string code;
+	for (uint32_t i = 0; i < num_symbols;) {
+		code.push_back(br.read(1) + '0');
+
+		if (codes.find(code) != codes.end()){
+			i++;
+			os << codes.find(code)->second;
+			code.clear();
+		}
 
 	}
 }
