@@ -167,7 +167,7 @@ node* gen_tree(vector<node>& v) {
 	return root;
 }
 
-void print_encode(node* t, string encoding, bitwriter bw, map<char, string> &codes) {
+void print_encode(node* t, string encoding, map<char, string> &codes) {
 
 	if (t->isleaf()) {
 		cout << encoding << " " << t->sim_ << endl;
@@ -179,10 +179,10 @@ void print_encode(node* t, string encoding, bitwriter bw, map<char, string> &cod
 
 	cout << "NODE: " << t->prob_ << endl;
 
-	print_encode(t->left_e_, encoding.append("0"), bw, codes);
+	print_encode(t->left_e_, encoding.append("0"), codes);
 	encoding.pop_back();
 
-	print_encode(t->right_e_, encoding.append("1"), bw, codes);
+	print_encode(t->right_e_, encoding.append("1"), codes);
 }
 
 void printBT(const std::string& prefix, const node* node, bool isLeft)
@@ -259,7 +259,7 @@ map<char, float> frequencies(ifstream& is, uint8_t* sum) {
 }
 
 void encode(const char* input_file, const char* output_file) {
-	
+
 	ifstream is(input_file, ios::binary);
 	ofstream os(output_file, ios::binary);
 
@@ -271,7 +271,7 @@ void encode(const char* input_file, const char* output_file) {
 	uint8_t freq;
 
 	map<char, float> m = frequencies(is, &freq);
-	
+
 	bitwriter bw(os);
 
 	bw.write(m.size(), 8);
@@ -281,7 +281,7 @@ void encode(const char* input_file, const char* output_file) {
 	node* tree = gen_tree(v);
 
 	map<char, string> codes;
-	print_encode(tree, string(""), bw, codes);
+	print_encode(tree, string(""), codes);
 
 	for (const auto& elem : codes) {
 		uint32_t len = elem.second.length();
@@ -320,6 +320,45 @@ void decode(const char* input_file, const char* output_file) {
 	
 	bitreader br(is);
 
+	/* Read MagicNumber */
+	string magicnumber;
+	while (magicnumber.length() != 8)
+		magicnumber.push_back(br.read(8));
+	cout << "MAGICNUMBER: " << magicnumber << endl << endl;
+
+	/* Read TableEntries 8 bit */
+	uint32_t table_entries = br.read(8);
+	cout << "TableEntries: " << table_entries << endl << endl;
+
+	/* Read HuffmanTable */
+	map<char, string> codes;
+	for (size_t i = 0; i < table_entries; i++) {
+		
+		char c = br.read(8);
+		uint8_t len = br.read(5);
+		
+		/* Add triplets */
+		string code;
+		
+		for (size_t j = 0; j < len; j++)
+			code.push_back(br.read(1) + '0');
+
+		codes[c] = code;
+	}
+
+	for (const auto& elem : codes)
+		cout << elem.first << " " << elem.second << endl;
+
+	cout << endl;
+
+	/* Read NumSymbols */
+	uint32_t num_symbols = br.read(32);
+	cout << "NumSymbols: " << num_symbols << endl;
+	
+	/* Decode */
+	for (uint32_t i = 0; i < num_symbols; i++) {
+
+	}
 }
 
 
