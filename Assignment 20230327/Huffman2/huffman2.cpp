@@ -168,22 +168,22 @@ node* gen_tree(vector<node>& v) {
 	return root;
 }
 
-void print_encode(node* t, string encoding, unordered_map<char, string>& codes) {
+void print_encode(node* t, string encoding, unordered_map<char, string>& codes, unordered_map<char, uint32_t> lenght_codes) {
 
 	if (t->isleaf()) {
-		cout << encoding << " " << t->sim_ << endl;
+		////cout << encoding << " " << t->sim_ << endl;
 
 		codes[t->sim_] = encoding;
-
+		lenght_codes[t->sim_] = encoding.size();
 		return;
 	}
 
-	cout << "NODE: " << t->prob_ << endl;
+	////cout << "NODE: " << t->prob_ << endl;
 
-	print_encode(t->left_e_, encoding.append("0"), codes);
+	print_encode(t->left_e_, encoding.append("0"), codes, lenght_codes);
 	encoding.pop_back();
 
-	print_encode(t->right_e_, encoding.append("1"), codes);
+	print_encode(t->right_e_, encoding.append("1"), codes, lenght_codes);
 }
 
 void printBT(const std::string& prefix, const node* node, bool isLeft)
@@ -259,14 +259,31 @@ map<char, float> frequencies(ifstream& is, uint8_t* sum) {
 	return out;
 }
 
-bool search(uint32_t len, unordered_map<char, uint32_t> codes, char* sim) {
+unordered_map<string, char> get_encode(unordered_map<char, uint32_t> codes) {
+	vector<string> v;
+	unordered_map<string, char> out;
 	for (const auto& elem : codes) {
-		if (elem.second == len) {
-			*sim = elem.first;
-			return true;
+		
+		/* First Element */
+		if (out.size() == 0) {
+			v.push_back("0");
+			out["0"] = elem.first;
+			continue;
 		}
+
+		string last_code = v.back();
+		string* tmp = new string(last_code);
+		tmp->back() = '1';
+
+		/* Found new code */
+		if (last_code.size() != elem.second)
+			tmp->push_back('0');
+
+		v.push_back(*tmp);
+		out[*tmp] = elem.first;
 	}
-	return false;
+
+	return out;
 }
 
 void encode(const char* input_file, const char* output_file) {
@@ -293,12 +310,14 @@ void encode(const char* input_file, const char* output_file) {
 
 	unordered_map<char, string> codes;
 
-	print_encode(tree, string(""), codes);
+	unordered_map<char, uint32_t> lenght_codes;
+
+	print_encode(tree, string(""), codes, lenght_codes);
 
 
 	for (const auto& elem : codes) {
 		
-		cout << elem.first << " " << elem.second << endl;
+		////cout << elem.first << " " << elem.second << endl;
 
 		uint32_t len = elem.second.length();
 
@@ -338,44 +357,49 @@ void decode(const char* input_file, const char* output_file) {
 	string magicnumber;
 	while (magicnumber.length() != 8)
 		magicnumber.push_back(br.read(8));
-	cout << "MAGICNUMBER: " << magicnumber << endl << endl;
+	//cout << "MAGICNUMBER: " << magicnumber << endl << endl;
 
 	/* Read TableEntries 8 bit */
 	uint32_t table_entries = br.read(8);
-	cout << "TableEntries: " << table_entries << endl << endl;
+	//cout << "TableEntries: " << table_entries << endl << endl;
 
 	/* Read HuffmanTable */
-	unordered_map<char, uint32_t> codes;
+	unordered_map<char, uint32_t> sym;
 	for (size_t i = 0; i < table_entries; i++) {
 
 		char c = br.read(8);
 		uint32_t len = br.read(5);
 		
-		codes[c] = len;
+		sym[c] = len;
 	}
 
-	for (const auto& elem : codes)
-		cout << elem.first << " " << elem.second << endl;
+	/* Get codes from HuffmanTable */
+	unordered_map<string, char> codes = get_encode(sym);
 
-	cout << endl;
+	//for (const auto& elem : sym)
+		//cout << elem.first << " " << elem.second << endl;
+
+	//cout << endl;
+
+	//for (const auto& elem : codes)
+		//cout << elem.first << " " << elem.second << endl;
+
+	//cout << endl;
 
 	/* Read NumSymbols */
 	uint32_t num_symbols = br.read(32);
-	cout << "NumSymbols: " << num_symbols << endl;
+
+	//cout << "NumSymbols: " << num_symbols << endl;
 
 	/* Decode */
 	string code;
-	uint32_t len = 0;
-	char elem;
 	for (uint32_t i = 0; i < num_symbols;) {
-		len++;
-		code.push_back(br.read(1) + '0');
+		code.push_back(br(1) + '0');
 
-		/*Trovo il codice*/
-		if (search(len, codes, &elem)) {
-			os << elem;
-			len = 0;
+		if (codes.find(code) != codes.end()) {
 			i++;
+			os << codes[code];
+			code.clear();
 		}
 	}
 }
