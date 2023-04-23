@@ -134,6 +134,7 @@ void encode(ifstream& is, ofstream& os) {
 
 					bw(sym[i], 8);
 				}
+				break;
 			}
 
 			/* CASO ultimi due simboli non scritti alla fine della lettura */
@@ -213,7 +214,40 @@ void encode(ifstream& is, ofstream& os) {
 }
 
 void decode(ifstream& is, ofstream& os) {
+	uint8_t elem;
+	char rep_sym;
+	vector<char> sym;
+	bitwriter bw(os);
+	bitreader br(is);
 
+	while ((elem = br(8)) || (elem == 0)) {
+
+		if (br.fail())
+			break;
+
+		/* CASO: fine lettura */
+		if (elem == 128)
+			break;
+
+		/* CASO Numero di simboli ripetuti */
+		if ((elem > 128) && (elem < 256)) {
+			is >> rep_sym;
+			for (size_t i = 0; i < 257 - elem; i++)
+				bw(rep_sym, 8);
+
+			continue;
+		}
+
+		/* CASO Numero di simboli diversi */
+		if ((elem >= 0) && (elem < 128)) {
+			elem++;
+			for (size_t i = 0; i < elem; i++) {
+				rep_sym = br(8);
+				bw(rep_sym, 8);
+			}
+			continue;
+		}
+	}
 }
 
 int main(int argc, char** argv) {
@@ -231,7 +265,7 @@ int main(int argc, char** argv) {
 
 	if ((is.fail()) || (os.fail())) {
 		cout << "Error opening files" << endl;
-		return 2;
+		return 1;
 	}
 
 	if (mode == "d")
