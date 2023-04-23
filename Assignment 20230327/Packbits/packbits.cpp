@@ -104,8 +104,10 @@ uint32_t count_elem(vector <char> sym) {
 		}
 
 		n_elems++;
-
 	}
+
+	if (n_elems > 127)
+		return 127;
 
 	return n_elems - 1;
 }
@@ -141,15 +143,16 @@ void encode(ifstream& is, ofstream& os) {
 				continue;
 			}
 			
+			rep_sym++;
+
 			/* CASO: se dovessi superare la soglia limite fermo il conteggio della ripetizione */
-			if (rep_sym == 129) {
-				bw(rep_sym, 8);
+			if (rep_sym == 128) {
+				bw(129, 8);
 				bw(last_char, 8);
 				rep_sym = 0;
 				continue;
 			}
 
-			rep_sym++;
 
 			/* CASO: fine di una serie di simboli differenti */
 			if (sym.size() != 0) {
@@ -158,8 +161,13 @@ void encode(ifstream& is, ofstream& os) {
 
 				bw(n_elem, 8);
 				
-				for (const auto& elem : sym)
-					bw(elem, 8);
+				for (size_t i = 0; i < sym.size(); i++) {
+					if (i == 128)
+						bw(0, 8);
+
+					bw(sym[i], 8);
+				}
+					
 				
 				sym.clear();
 			}
@@ -184,14 +192,26 @@ void encode(ifstream& is, ofstream& os) {
 		last_char = curr_char;
 	}
 
+	/* CASO caratteri residui alla fine della lettura */
 	if (rep_sym == 0)
 		sym.push_back(last_char);
 
+	/* CASO simboli non scritti alla fine della lettura */
 	if (sym.size() != 0) {
 		uint32_t n_elem = count_elem(sym);
 		bw(n_elem, 8);
-		for (const auto& elem : sym)
-			bw(elem, 8);
+		for (size_t i = 0; i < sym.size(); i++) {
+			if (i == 128)
+				bw(0, 8);
+
+			bw(sym[i], 8);
+		}
+	}
+
+	/* CASO ultimi due simboli non scritti alla fine della lettura */
+	if (last_char == curr_char) {
+		bw(257 - rep_sym - 1, 8);
+		bw(last_char, 8);
 	}
 
 	/* Scrivo EOB alla fine della lettura del file */
