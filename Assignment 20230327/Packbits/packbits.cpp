@@ -97,21 +97,15 @@ public:
 uint32_t count_elem(vector <char> sym) {
 	uint32_t n_elems = 0;
 
-	for (const auto& elem : sym) {
-		if (elem == '\n') {
-			n_elems += 2;
-			continue;
-		}
-
+	for (const auto& elem : sym) 
 		n_elems++;
-	}
+
 
 	if (n_elems > 127)
 		return 127;
 
 	return n_elems - 1;
 }
-
 
 void encode(ifstream& is, ofstream& os) {
 	char curr_char;
@@ -124,8 +118,32 @@ void encode(ifstream& is, ofstream& os) {
 	while ((curr_char = br(8))) {
 		 
 		/* CHECK EOF */
-		if (br.fail())
+		if (br.fail()) {
+
+			/* CASO caratteri residui alla fine della lettura */
+			if (rep_sym == 0)
+				sym.push_back(last_char);
+
+			/* CASO simboli non scritti alla fine della lettura */
+			if (sym.size() != 0) {
+				uint32_t n_elem = count_elem(sym);
+				bw(n_elem, 8);
+				for (size_t i = 0; i < sym.size(); i++) {
+					if (i == 128)
+						bw(0, 8);
+
+					bw(sym[i], 8);
+				}
+			}
+
+			/* CASO ultimi due simboli non scritti alla fine della lettura */
+			if (last_char == curr_char) {
+				bw(257 - rep_sym - 1, 8);
+				bw(last_char, 8);
+			}
+			
 			break;
+		}
 
 		/* Durante la prima lettura nessun simbolo è stato letto prima */
 		if (last_char == NULL) {
@@ -147,7 +165,7 @@ void encode(ifstream& is, ofstream& os) {
 
 			/* CASO: se dovessi superare la soglia limite fermo il conteggio della ripetizione */
 			if (rep_sym == 128) {
-				bw(129, 8);
+				bw(257 - rep_sym, 8);
 				bw(last_char, 8);
 				rep_sym = 0;
 				continue;
@@ -168,7 +186,6 @@ void encode(ifstream& is, ofstream& os) {
 					bw(sym[i], 8);
 				}
 					
-				
 				sym.clear();
 			}
 		}
@@ -188,30 +205,7 @@ void encode(ifstream& is, ofstream& os) {
 				sym.push_back(last_char);
 			}
 		}
-
 		last_char = curr_char;
-	}
-
-	/* CASO caratteri residui alla fine della lettura */
-	if (rep_sym == 0)
-		sym.push_back(last_char);
-
-	/* CASO simboli non scritti alla fine della lettura */
-	if (sym.size() != 0) {
-		uint32_t n_elem = count_elem(sym);
-		bw(n_elem, 8);
-		for (size_t i = 0; i < sym.size(); i++) {
-			if (i == 128)
-				bw(0, 8);
-
-			bw(sym[i], 8);
-		}
-	}
-
-	/* CASO ultimi due simboli non scritti alla fine della lettura */
-	if (last_char == curr_char) {
-		bw(257 - rep_sym - 1, 8);
-		bw(last_char, 8);
 	}
 
 	/* Scrivo EOB alla fine della lettura del file */
@@ -231,9 +225,9 @@ int main(int argc, char** argv) {
 	
 	string mode(argv[1]);
 
-	ifstream is(argv[2]);
+	ifstream is(argv[2], ios::binary);
 	
-	ofstream os(argv[3]);
+	ofstream os(argv[3], ios::binary);
 
 	if ((is.fail()) || (os.fail())) {
 		cout << "Error opening files" << endl;
