@@ -3,41 +3,43 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iomanip>
 
 using namespace std;
 
-string found_string(ifstream& is, ofstream& os, bool is_key, int tab_level);
-void found_integer(ifstream& is, ofstream& os, int tab_level);
-void found_list(ifstream& is, ofstream& os, int tab_level);
-void found_dict(ifstream& is, ofstream& os, bool is_key, int tab_level);
-void check_type(ifstream& is, ofstream& os, int tab_level);
+
+string found_string(ifstream& is, bool is_key, int tab_level);
+void found_integer(ifstream& is, int tab_level);
+void found_list(ifstream& is, int tab_level);
+void found_dict(ifstream& is, bool is_key, int tab_level);
+void check_type(ifstream& is, int tab_level);
 
 
-void print_tab(ofstream& os, int n_tab) {
+void print_tab(int n_tab) {
 	for (int i = 0; i < n_tab; i++)
-		os << "\t";
+		cout << "\t";
 }
 
-void check_type(ifstream& is, ofstream& os, int tab_level) {
+void check_type(ifstream& is, int tab_level) {
 	char c = is.peek();
 	switch (c) {
-	break; case 'd': found_dict(is, os, true, tab_level + 1);
-	break; case 'l': found_list(is, os, tab_level + 1);
-	break; case 'i': found_integer(is, os, tab_level);
-	break; default: found_string(is, os, false, tab_level);
+	break; case 'd': found_dict(is, true, tab_level + 1);
+	break; case 'l': found_list(is, tab_level + 1);
+	break; case 'i': found_integer(is, tab_level);
+	break; default: found_string(is, false, tab_level);
 	}
 }
 
-string found_string(ifstream& is, ofstream& os, bool is_key, int tab_level) {
+string found_string(ifstream& is, bool is_key, int tab_level) {
 
 	char elem, colum;
 	size_t len;
 	string out;
 
 	if(is_key)
-		print_tab(os, tab_level);
-	else
-		os << "\"";
+		print_tab(tab_level);
+
+	cout << "\"";
 	
 	is >> len >> colum;
 
@@ -46,49 +48,51 @@ string found_string(ifstream& is, ofstream& os, bool is_key, int tab_level) {
 		is.get(elem);
 
 		if ((elem < 32) || (elem > 126)) {
-			os << ".";
+			cout << ".";
 			continue;
 		}
 
-		os << elem;
+		cout << elem;
 		if (is_key)
 			out += elem;
 
 	}
 
+	cout << "\"";
+
 	if (!is_key)
-		os << "\"" << endl;
+		cout << endl;
 
 	return out;
 }
 
-void found_integer(ifstream& is, ofstream& os, int tab_level){
+void found_integer(ifstream& is, int tab_level){
 
 	int64_t value;
 	char start, stop;
 
 	/* Leggo il valore, la lettera finale e riporto il valore*/
 	is >> start >> value >> stop;
-	os << value << "\n";
+	cout << value << "\n";
 }
 
-void found_list(ifstream& is, ofstream& os, int tab_level) {
+void found_list(ifstream& is, int tab_level) {
 	char start, stop;
 	is >> start;
-	os << "[\n";
+	cout << "[\n";
 
 	while (is.peek() != 'e') {
 
-		print_tab(os, tab_level + 1);
+		print_tab(tab_level + 1);
 
-		check_type(is, os, tab_level);
+		check_type(is, tab_level);
 	}
-	print_tab(os, tab_level);
-	os << "]\n";
+	print_tab(tab_level);
+	cout << "]\n";
 	is >> stop;
 }
 
-void print_pieces(ifstream& is, ofstream& os, int tab_level){
+void print_pieces(ifstream& is, int tab_level){
 
 	char elem, colum;
 	size_t len;
@@ -100,47 +104,44 @@ void print_pieces(ifstream& is, ofstream& os, int tab_level){
 		is.get(elem);
 
 		if (i % 20 == 0) {
-			os << endl;
-			print_tab(os, tab_level);
+			cout << endl;
+			print_tab(tab_level);
 		}
 		
-		printf("%x", elem & 0xff);
-	
+		cout << hex << setfill('0') << setw(2) << (int)(unsigned char)elem;
 	}
-	os << endl;
+	cout << endl;
 }
 
-void found_dict(ifstream& is, ofstream& os, bool is_key, int tab_level) {
+void found_dict(ifstream& is, bool is_key, int tab_level) {
 	
 	char start, stop;
-	os << "{\n";
+	cout << "{\n";
 	is >> start;
 	string key;
 
 	while (is.peek() != 'e') {
 
 		/* Chiave */
-		key = found_string(is, os, true, tab_level + 1);
+		key = found_string(is, true, tab_level + 1);
 
-		os << " => ";
+		cout << " => ";
 
 		if (key == "pieces") {
-			print_pieces(is, os, tab_level + 1);
+			print_pieces(is, tab_level + 2);
 			continue;
 		}
 
 		/* Valore */
-		check_type(is, os, tab_level);
+		check_type(is, tab_level);
 	}
 
-	print_tab(os, tab_level);
-	os << "}\n";
+	print_tab(tab_level);
+	cout << "}\n";
 
 	is >> stop;
 
 }
-
-
 
 int main(int args, char** argv) {
 
@@ -156,11 +157,7 @@ int main(int args, char** argv) {
 	if (is.fail())
 		return -1;
 
-	ofstream os(filename + ".dump");
-	if (os.fail())
-		return -1;
-
-	check_type(is, os, -1);
+	check_type(is, -1);
 
 	return 0;
 }
