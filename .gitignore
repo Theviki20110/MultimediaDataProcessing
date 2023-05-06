@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/BayerDecode
+/Assignment20230428
+/Assignment 20230327/PackbitsExt
