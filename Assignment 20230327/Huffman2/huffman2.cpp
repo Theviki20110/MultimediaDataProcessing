@@ -235,6 +235,9 @@ map<char, float> frequencies(ifstream& is, uint8_t* sum) {
 	map<char, float> out;
 
 	while (is.read(&c, sizeof(char))) {
+		if (is.fail())
+			break;
+
 		count++;
 
 		if (out.count(c)) {
@@ -346,15 +349,15 @@ void encode(const char* input_file, const char* output_file) {
 void decode(const char* input_file, const char* output_file) {
 
 	ifstream is(input_file, ios::binary);
-	ofstream os(output_file);
+	ofstream os(output_file, ios::binary);
 
 	if ((is.fail()) || (os.fail()))
-		exit(3);
+		return;
 
 	bitreader br(is);
 
 	/* Read MagicNumber */
-	string magicnumber;
+	string magicnumber("");
 	while (magicnumber.length() != 8)
 		magicnumber.push_back(br.read(8));
 	//cout << "MAGICNUMBER: " << magicnumber << endl << endl;
@@ -393,7 +396,8 @@ void decode(const char* input_file, const char* output_file) {
 
 	/* Decode */
 	string code;
-	for (uint32_t i = 0; i < num_symbols;) {
+	uint32_t i = 0;
+	while (i < num_symbols) {
 		code.push_back(br(1) + '0');
 
 		if (codes.find(code) != codes.end()) {
