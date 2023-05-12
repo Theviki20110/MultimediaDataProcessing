@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{58bbd07c-10f6-41c8-b062-1ddbf386833c}</ProjectGuid>
-    <RootNamespace>HuffDiff</RootNamespace>
+    <ProjectGuid>{d49c27c2-a652-49c7-8bff-722f0d718936}</ProjectGuid>
+    <RootNamespace>PGM</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -127,7 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="huffdiff.cpp" />
+    <ClInclude Include="mat.h" />
+    <ClInclude Include="pgm16.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pgm16.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

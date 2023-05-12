@@ -128,9 +128,12 @@ void encode(ifstream& is, ofstream& os) {
 
 			/* Caso in cui siano 128 ripetizioni*/
 			if (rep == 128) {
+				
 				bw(257 - rep, 8);
 				bw(last_elem, 8);
+
 				rep = 0;
+				
 				last_elem = curr_elem;
 				continue;
 			}
@@ -143,8 +146,13 @@ void encode(ifstream& is, ofstream& os) {
 					bw(elems.size() - 1, 8);
 
 				for (size_t i = 0; i < elems.size(); i++) {
-					if (i == 128)
-						bw(0, 8);
+					if ((i % 128 == 0) && (i != 0)) {
+						if (elems.size() - i > 127)
+							bw(127, 8);
+						else
+							bw(elems.size() - i - 1, 8);
+					}
+
 					bw(elems[i], 8);
 				}
 				elems.clear();
@@ -234,6 +242,8 @@ void decode(ifstream& is, ofstream& os) {
 		if ((rep >= 0) && (rep < 128)) {
 			for (int i = 0; i < rep + 1; i++) {
 				is.get(elem);
+				if (is.fail())
+					break;
 				os << elem;
 			}
 			continue;

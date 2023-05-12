@@ -15,7 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="split.cpp">
+    <ClInclude Include="pgm16.h">
+      <Filter>File di origine</Filter>
+    </ClInclude>
+    <ClInclude Include="mat.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pgm16.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
   </ItemGroup>
