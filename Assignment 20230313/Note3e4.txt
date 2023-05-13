@@ -39,4 +39,4 @@
 	uint8_t bit; Può essere 0 o 1
 
 	buf = buf*2 + bit;
-	bug = (buf << 1) | bit;
+	buf = (buf << 1) | bit;

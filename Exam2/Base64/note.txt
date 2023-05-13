@@ -1,0 +1,23 @@
+Per sbaglio ho scritto l'encoding anzichè il decoding
+
+value = (value << 1) | ((elem >> (i - 1)) & 1);
+
+Meccanismo molto easy:
+
+Value è una variabile inizializzata a 0 quindi: t0 --> 00000000 (value)
+
+Elem è una variabile che contiene il carattere da codificare.
+
+i è una variabile che va da 8 a 0.
+
+Quindi:
+
+for (i che va da 8 a 0)
+	estraggo i bit di elem dal più significativo al meno significativo (8° - 2°), in quanto la codifica prevede questo
+	con lo shift (>>) seleziono il bit i-esimo e con l'and (& 1) ne seleziono solo 1.
+	
+	value deve scorrere quindi ad ogni iterazione deve shiftare di 1 verso sinistra (<< 1) in modo da avere il bit più significativo a sinistra e quello meno significativo a destra.
+	l'or serve per aggiungere il bit estratto da elem.
+	c'è una variabile n che, una volta inseriti 6 bit, blocca l'iterazione e chiama una funzione che ritorna la rispettiva codifica secondo il dizionario base64.
+
+	
