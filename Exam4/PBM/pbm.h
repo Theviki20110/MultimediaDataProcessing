@@ -1,5 +1,5 @@
 #if!defined PBM_H
-#define PGM_H
+#define PBM_H
 
 #include <fstream>
 #include <vector>
