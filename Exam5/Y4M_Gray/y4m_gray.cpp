@@ -19,14 +19,12 @@ bool y4m_extract_gray(const std::string& filename, std::vector<mat<uint8_t>>& fr
 	/* read tagged-field */
 	char tmp, intl;
 	string chroma("420jpeg"), x_field, frame_tag;
-	uint32_t height, width, frame_rate, shape_factor;
+	int height = -1, width = -1, frame_rate, shape_factor;
 
 	/* white space */
 	is.get(tmp);
 
-	while (true) {
-
-		is.get(tmp);
+	while (is.get(tmp)) {
 		
 		if (tmp == 10)
 			break;
@@ -45,30 +43,43 @@ bool y4m_extract_gray(const std::string& filename, std::vector<mat<uint8_t>>& fr
 	if ((height < 0) || (width < 0) || (chroma != "420jpeg"))
 		return false;
 
-	mat<uint8_t> frame(width, height);
-	
-	while (true) {
+	mat<uint8_t> frame(height, width);
+	mat<uint8_t> cb(height / 2, width / 2);
+	mat<uint8_t> cr(height / 2, width/ 2);
 
-		is >> frame_tag;
+	while (is >> frame_tag) {
+
 		if (frame_tag != "FRAME")
 			break;
-		while (is.get(tmp)) {
-			for (size_t r = 0; r < width; r++) {
-				for (size_t c = 0; c < height; c++) {
 
-				}
+		while (is.get(tmp)) {
+
+			if (tmp == 10)
+				break;
+
+			switch (tmp) {
+			break; case 'I': is >> intl;
+			break; case 'X': is >> x_field;
+			break; default: return false;
 			}
+
 		}
+
+		is.read(frame.rawdata(), frame.rawsize());
+		is.read(cb.rawdata(), cb.rawsize());
+		is.read(cr.rawdata(), cr.rawsize());
+
+		frames.push_back(frame);
 	}
 	
 	return true;
 }
 
 
-int main(int args, char** argv) {
+/*int main(int args, char** argv) {
 
 	vector<mat<uint8_t>> frames;
 
 	y4m_extract_gray(argv[1], frames);
 	return 0;
-}
+}*/
