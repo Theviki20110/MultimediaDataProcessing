@@ -3,7 +3,7 @@
 
 #include <fstream>
 #include <iostream>
-#include <vector>
+#include <string>
 using namespace std;
 
 void lzs_decompress(std::istream& is, std::ostream& os);

@@ -67,10 +67,12 @@ bool LoadPPM(const std::string& filename, mat<vec3b>& img) {
 	else
 		readTwoBytes(is, img);
 
+
+
 	return true;
 }
 
-/*int main(int args, char** argv) {
+int main(int args, char** argv) {
 	
 	mat<vec3b> img;
 
@@ -78,4 +80,4 @@ bool LoadPPM(const std::string& filename, mat<vec3b>& img) {
 		return 1;
 
 	return 0;
-}*/
+}

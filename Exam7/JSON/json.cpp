@@ -95,25 +95,30 @@ void SplitRGB(const mat<vec3b>& img, mat<uint8_t>& img_r, mat<uint8_t>& img_g, m
 /* Packbits utils */
 void PackBitsEncode(const mat<uint8_t>& img, std::vector<uint8_t>& encoded) {
 
-	uint8_t last_num = img(0, 0), curr_num, rep = 0;
+	uint8_t last_num, curr_num, rep = 1;
 	vector<uint8_t> tmp;
 
 	for (int r = 0; r < img.rows(); r++) {
 		for (int c = 0; c < img.cols(); c++) {
 
-			if ((r == 0) && (c == 0))
+			if ((r == 0) && (c == 0)) {
+				last_num = img(r, c);
 				continue;
+			}
 
 			curr_num = img(r, c);
 
-
+			/*CASO1: caratteri uguali*/
 			if (curr_num == last_num) {
 
-				/* Fine sequenza di caratteri differenti */
 				if (tmp.size() != 0) {
-					encoded.push_back((uint8_t)tmp.size() + 1);
+
+					/* CASO1.2: Fine sequenza di caratteri differenti */
+					encoded.push_back((uint8_t)tmp.size() - 1);
+
 					for (const auto& elem : tmp)
 						encoded.push_back(elem);
+
 					tmp.clear();
 				}
 
@@ -121,11 +126,13 @@ void PackBitsEncode(const mat<uint8_t>& img, std::vector<uint8_t>& encoded) {
 			}
 
 			else {
-				/* Fine sequenza di caratteri ripetuti */
-				if (rep != 0) {
+				/*CASO2: Fine sequenza di caratteri ripetuti */
+				if (rep != 1) {
 					encoded.push_back(257 - rep);
 					encoded.push_back(last_num);
-					rep = 0;
+					last_num = curr_num;
+					rep = 1;
+					continue;
 				}
 
 				tmp.push_back(last_num);
@@ -135,26 +142,19 @@ void PackBitsEncode(const mat<uint8_t>& img, std::vector<uint8_t>& encoded) {
 		}
 	}
 
-
-
+	tmp.push_back(curr_num);
+	/* Fine sequenza di caratteri ripetuti */
+	if (rep != 1) {
+		encoded.push_back(257 - rep);
+		encoded.push_back(last_num);
+	}
 	/* Fine sequenza di caratteri differenti */
-	if (tmp.size() != 0) {
-		encoded.push_back((uint8_t)tmp.size() + 1);
+	if (tmp.size() != 1) {
+		encoded.push_back((uint8_t)tmp.size() - 1);
 		for (const auto& elem : tmp)
 			encoded.push_back(elem);
 		tmp.clear();
 	}
-
-	/* Fine sequenza di caratteri ripetuti */
-	if (rep != 0) {
-		encoded.push_back(257 - rep - 1);
-		encoded.push_back(last_num);
-		rep = 0;
-	}
-
-	tmp.push_back(last_num);
-
-
 
 	/* Inserisco l'EOD */
 	encoded.push_back(128);
